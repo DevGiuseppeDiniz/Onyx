@@ -23,7 +23,16 @@ jobs:
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
-          pg_dump --version
+
+          # /usr/bin/pg_dump e' o wrapper do postgresql-common: ele escolhe a
+          # versao pelo cluster LOCAL (o runner ja traz um Postgres 16), nao
+          # pela do servidor remoto. Por isso instalar o 17 nao basta -- o
+          # wrapper seguia chamando o 16 e o pg_dump aborta em version
+          # mismatch. Caminho absoluto na frente do PATH resolve.
+          PGBIN=/usr/lib/postgresql/17/bin
+          test -x "$PGBIN/pg_dump" || { echo "::error::postgresql-client-17 nao instalou"; exit 1; }
+          echo "$PGBIN" >> "$GITHUB_PATH"
+          "$PGBIN/pg_dump" --version
 
       # Passo separado de proposito: distingue "nao conecta" de "conecta mas o
       # dump falha". Sem isso, os dois viram o mesmo "exit code 1" mudo.
