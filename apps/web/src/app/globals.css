@@ -1,26 +1,127 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================================
+   Onyx · tokens do painel web
+   Estrutura e densidade seguem o dashboard do Supabase; o acento e' nosso.
+   Contrato completo em DESIGN.md, secao "Painel web".
+   ========================================================================= */
+@theme {
+  /* --- superficies -------------------------------------------------------
+     Quatro camadas, cada uma um passo minusculo acima da anterior. O que
+     separa elemento aqui e' BORDA, nao sombra -- zero elevacao no sistema
+     inteiro. E' isso que da o aspecto plano e limpo.                       */
+  --color-canvas:       #0a0a0b;
+  --color-surface:      #131316;
+  --color-raised:       #1a1a1e;
+  --color-overlay:      #212127;
+
+  /* --- bordas ------------------------------------------------------------
+     Quase invisiveis de proposito. `line` mal se ve e ainda assim organiza
+     a tela; `edge` so' em hover e foco.                                    */
+  --color-line:         #26262c;
+  --color-edge:         #35353d;
+
+  /* --- texto -------------------------------------------------------------
+     A hierarquia e' feita por OPACIDADE, nao por tamanho. Rotulo apagado,
+     valor claro -- no mesmo tamanho, quase sempre.                         */
+  --color-ink:          #ededee;
+  --color-ink-muted:    #8f8f99;
+  --color-ink-subtle:   #63636d;
+
+  /* --- acento ------------------------------------------------------------
+     Lima em vez do verde-menta do Supabase: mesma sobriedade, mas menta le
+     como ferramenta de dev e lima le como academia. Um acento so'.         */
+  --color-accent:       #c6f24e;
+  --color-accent-ink:   #0a0a0b;
+  --color-accent-dim:   #8fae37;
+
+  --color-danger:       #ff5a5f;
+  --color-success:      #4ade80;
+  --color-warning:      #fbbf24;
+
+  /* --- raio --------------------------------------------------------------
+     Apertado. Raio grande engorda a interface e briga com densidade.       */
+  --radius-control:     6px;
+  --radius-card:        8px;
+
+  /* --- tipografia --------------------------------------------------------
+     Corpo em 13px. Parece pequeno isolado, mas e' o que permite densidade
+     sem poluicao -- e e' o tamanho que o Supabase usa.                     */
+  --text-micro:         0.6875rem;  /* 11px · rotulo em caixa alta        */
+  --text-micro--line-height: 1rem;
+  --text-body:          0.8125rem;  /* 13px · padrao da interface         */
+  --text-body--line-height: 1.25rem;
+  --text-lead:          0.875rem;   /* 14px · valor em destaque           */
+  --text-lead--line-height: 1.25rem;
+  --text-section:       1rem;       /* 16px · titulo de secao             */
+  --text-section--line-height: 1.5rem;
+  --text-page:          1.5rem;     /* 24px · titulo de pagina            */
+  --text-page--line-height: 2rem;
+  --text-metric:        1.75rem;    /* 28px · numero de metrica           */
+  --text-metric--line-height: 2rem;
+
+  /* --- ritmo vertical ----------------------------------------------------
+     A sensacao de "clean" vem daqui, nao do minimalismo: 64px entre secoes.
+     Cortar isso e' o jeito mais rapido de perder o efeito.                 */
+  --spacing-section:    4rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Numero nunca pode mudar de largura ao trocar de valor -- carga "88 kg"
+     virando "90 kg" faz a lista inteira tremer. */
+  :where(table, [data-numeric]) {
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-ink);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Rotulo em caixa alta que aparece em toda a interface do Supabase.
+     Sempre acima do valor, sempre apagado. */
+  .label-micro {
+    font-size: var(--text-micro);
+    line-height: var(--text-micro--line-height);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-subtle);
+    font-weight: 500;
+  }
+
+  /* Card: borda e nada mais. Sem sombra, sem gradiente, sem hover que mexe
+     na posicao. */
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  /* Tile quadrado de icone -- o quadradinho ao lado de STATUS, COMPUTE etc. */
+  .icon-tile {
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    color: var(--color-ink-subtle);
+    flex-shrink: 0;
+  }
+
+  .focus-ring {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
 }

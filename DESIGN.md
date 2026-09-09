@@ -93,3 +93,65 @@ ele esta errado.
 Tela de execucao: um exercicio por vez, ocupando a tela.
 Tela de planejamento (web, professor): densa, tabela, atalho de teclado.
 As duas usam os mesmos tokens e escalas -- o que muda e' a densidade.
+
+---
+
+# Painel web
+
+Estrutura e densidade derivadas do dashboard do Supabase. O acento e a
+paleta sao nossos. Tokens em `apps/web/src/app/globals.css`.
+
+## Dois idiomas, nao um
+
+O erro mais facil aqui e' aplicar o mesmo tratamento nas duas situacoes.
+
+| | `dense` | `form` |
+|---|---|---|
+| Onde | dashboard, tabela, painel | login, cadastro, formulario longo |
+| Rotulo | CAIXA ALTA, 11px, tracking 0.06em | sentence case, 13px |
+| Input | 32px | 40px |
+| Botao | 32px (`md`) | 40px (`lg`) |
+| Postura | varredura, muita coisa na tela | uma tarefa por vez |
+
+Rotulo em caixa alta numa tela de login faz o formulario parecer painel de
+configuracao. O componente `Field` recebe `tone` para isso.
+
+## O que produz a sensacao de "clean"
+
+Nao e' minimalismo. Sao tres coisas concretas:
+
+1. **Respiro de 64px entre secoes** (`--spacing-section`). E' o primeiro item
+   cortado sob pressao e o que mais custa perder.
+2. **Separacao por BORDA, nunca por sombra.** Zero elevacao no sistema todo.
+   Bordas quase invisiveis (`--color-line`) que ainda assim organizam.
+3. **Hierarquia por opacidade, nao por tamanho.** Rotulo apagado, valor
+   claro, quase sempre no mesmo tamanho.
+
+## Navegacao em dois niveis
+
+- **Rail** (48px, so' icone): areas do produto
+- **Painel contextual** (256px): sub-navegacao da area ativa, com header de
+  grupo em caixa alta
+
+O painel so' existe onde a area tem mais de uma tela. Painel com um item so'
+e' moldura vazia -- ai a pagina ocupa largura cheia.
+
+**Item ativo e' fundo mais claro, nunca cor de acento.** Acento marca acao;
+localizacao e' contraste de superficie.
+
+## Padroes fixos
+
+- **Empty state**: borda TRACEJADA, icone, titulo, descricao, acao. Tracejado
+  comunica "aqui vai aparecer algo"; borda solida leria como card com defeito.
+- **Linha de atalhos**: divisor vertical entre colunas, sem borda por card.
+- **Stat tile**: tile de icone 56px + rotulo micro + valor.
+- **Numero**: sempre `tabular-nums`. Carga "88 kg" virando "90 kg" nao pode
+  fazer a lista tremer.
+- **Erro de campo SUBSTITUI a dica**, nao empilha: campo que cresce ao errar
+  empurra o formulario e desorienta.
+
+## Densidade nao e' a mesma do app
+
+O `Button` de 32px vale no painel. A regra de **56px de alvo** continua
+valendo na tela de execucao de treino do aluno -- contexto oposto: de pe,
+suado, uma mao. Mesmos tokens, densidades diferentes.
