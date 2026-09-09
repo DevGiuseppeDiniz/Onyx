@@ -1,0 +1,41 @@
+name: Backup do banco
+
+# O plano Free do Supabase nao inclui backup nenhum. Enquanto o projeto
+# estiver no Free, este workflow E' o backup. Ao migrar para o Pro
+# (backup de 7 dias incluso), ele continua util como copia fora do
+# fornecedor -- nao remova.
+on:
+  schedule:
+    - cron: '0 6 * * *' # 03:00 BRT
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar cliente do Postgres 17
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump
+        env:
+          # Settings > Database > Connection string (pooler, modo session)
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "::error::secret SUPABASE_DB_URL ausente"; exit 1; }
+          mkdir -p dump
+          pg_dump "$SUPABASE_DB_URL" \
+            --format=custom --no-owner --no-privileges \
+            --schema=public --schema=app --schema=auth \
+            --file="dump/onyx-$(date -u +%Y%m%d).dump"
+          ls -lh dump/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onyx-db-${{ github.run_id }}
+          path: dump/
+          retention-days: 30

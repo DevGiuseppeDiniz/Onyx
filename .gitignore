@@ -1,0 +1,41 @@
+node_modules/
+.pnpm-store/
+
+# env
+.env
+.env.local
+.env*.local
+!.env.example
+
+# next
+.next/
+out/
+next-env.d.ts
+
+# expo
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+ios/
+android/
+
+# supabase
+supabase/.temp/
+supabase/.branches/
+
+# misc
+.DS_Store
+*.log
+*.tsbuildinfo
+.turbo/
+coverage/
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
