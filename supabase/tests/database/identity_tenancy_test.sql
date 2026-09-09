@@ -49,7 +49,11 @@ end $$;
 -- -----------------------------------------------------------------------------
 -- atores
 -- -----------------------------------------------------------------------------
+-- As tabelas auxiliares recebem INSERT ja logado como authenticated
+-- (tests.login_as troca de papel), e quem as criou foi postgres.
+-- Sem grant, o teste falha por permissao antes de testar qualquer coisa.
 create temporary table actors (label text primary key, uid uuid);
+grant all on actors to authenticated;
 insert into actors values
   ('gym_owner',    tests.mkuser('dono@alphafit.test')),
   ('gym_coach',    tests.mkuser('ana@alphafit.test')),
@@ -62,7 +66,9 @@ create or replace function tests.uid(p_label text)
 returns uuid language sql as $$ select uid from actors where label = p_label $$;
 
 create temporary table orgs (label text primary key, id uuid);
+grant all on orgs to authenticated;
 create temporary table members (label text primary key, id uuid, code text);
+grant all on members to authenticated;
 
 -- =============================================================================
 -- 1 · o perfil nasce junto com o usuario
