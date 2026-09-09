@@ -1,9 +1,8 @@
 name: Backup do banco
 
 # O plano Free do Supabase nao inclui backup nenhum. Enquanto o projeto
-# estiver no Free, este workflow E' o backup. Ao migrar para o Pro
-# (backup de 7 dias incluso), ele continua util como copia fora do
-# fornecedor -- nao remova.
+# estiver no Free, este workflow E' o backup. Ao migrar para o Pro (backup de
+# 7 dias incluso), ele continua util como copia fora do fornecedor.
 on:
   schedule:
     - cron: '0 6 * * *' # 03:00 BRT
@@ -12,27 +11,56 @@ on:
 jobs:
   dump:
     runs-on: ubuntu-latest
+    env:
+      # Connect > Session pooler. NAO serve a direct connection (IPv6-only no
+      # Free, e o runner do GitHub e' IPv4) nem o transaction pooler (6543).
+      PGCONN: ${{ secrets.SUPABASE_DB_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Instalar cliente do Postgres 17
         run: |
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
 
-      - name: Dump
-        env:
-          # Settings > Database > Connection string (pooler, modo session)
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      # Passo separado de proposito: distingue "nao conecta" de "conecta mas o
+      # dump falha". Sem isso, os dois viram o mesmo "exit code 1" mudo.
+      - name: Testar conexao
         run: |
-          test -n "$SUPABASE_DB_URL" || { echo "::error::secret SUPABASE_DB_URL ausente"; exit 1; }
+          if [ -z "$PGCONN" ]; then
+            echo "::error::secret SUPABASE_DB_URL nao esta definido"; exit 1
+          fi
+          # host e porta sem revelar a senha no log
+          echo "destino: $(printf '%s' "$PGCONN" | sed -E 's#^(postgres(ql)?://)[^@]*@#\1***@#')"
+          if ! psql "$PGCONN" -Atc 'select version()' 2>/tmp/psql.err; then
+            echo "::error::falha ao conectar"; sed -E 's/password[^ ]*/password ***/g' /tmp/psql.err
+            echo "Checklist: (1) e' o Session pooler, porta 5432, host *.pooler.supabase.com?"
+            echo "           (2) usuario e' postgres.<project_ref>, nao so postgres?"
+            echo "           (3) senha com caractere especial precisa de percent-encoding?"
+            exit 1
+          fi
+          echo "conexao ok"
+
+      # Dados de negocio e contas em dois passos: o schema auth pertence ao
+      # supabase_auth_admin, e um problema de permissao la nao pode derrubar
+      # o backup dos treinos.
+      - name: Dump · public + app
+        run: |
           mkdir -p dump
-          pg_dump "$SUPABASE_DB_URL" \
-            --format=custom --no-owner --no-privileges \
-            --schema=public --schema=app --schema=auth \
-            --file="dump/onyx-$(date -u +%Y%m%d).dump"
-          ls -lh dump/
+          pg_dump "$PGCONN" --format=custom --no-owner --no-privileges \
+            --schema=public --schema=app \
+            --file="dump/onyx-dados-$(date -u +%Y%m%d).dump"
+
+      - name: Dump · auth
+        run: |
+          pg_dump "$PGCONN" --format=custom --no-owner --no-privileges \
+            --schema=auth \
+            --file="dump/onyx-auth-$(date -u +%Y%m%d).dump"
+
+      - name: Conferir
+        run: ls -lh dump/
 
       - uses: actions/upload-artifact@v4
         with:
