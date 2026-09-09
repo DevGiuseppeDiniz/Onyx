@@ -1,0 +1,50 @@
+name: Testes do banco
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db-tests.yml'
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  pgtap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Stack local descartavel, NAO o projeto da nuvem. Dois motivos:
+      #  1. os testes criam e apagam auth.users -- rodar contra producao
+      #     seria errado mesmo com rollback;
+      #  2. e' a unica coisa que verifica as 6 migrations aplicando do ZERO,
+      #     em ordem. Ate hoje elas so' foram aplicadas incrementalmente,
+      #     uma a uma, o que nao prova que um clone limpo funciona.
+      - name: Subir o Postgres local
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector
+
+      # pgTAP fica FORA das migrations de proposito: e' ferramenta de teste,
+      # nao pertence a producao. Por isso e' habilitado aqui.
+      - name: Habilitar pgTAP
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: psql "$DB_URL" -c 'create extension if not exists pgtap with schema extensions;'
+
+      - name: pgTAP
+        run: supabase test db
+
+      - name: Diagnostico
+        if: failure()
+        run: |
+          echo "::group::supabase status"; supabase status || true; echo "::endgroup::"
+          echo "::group::containers";      docker ps -a || true;    echo "::endgroup::"
+          echo "::group::log do postgres"; docker logs supabase_db_onyx --tail 80 2>&1 || true; echo "::endgroup::"
