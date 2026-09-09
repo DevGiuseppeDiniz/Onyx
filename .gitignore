@@ -39,3 +39,6 @@ coverage/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# anotacoes locais (credenciais de teste, rascunho)
+.local/
